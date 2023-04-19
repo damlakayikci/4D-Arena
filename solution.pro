@@ -1,6 +1,8 @@
-distance(0, 0, 0).  % a dummy predicate to make the sim work.
+%distance(0, 0, 0).  % a dummy predicate to make the sim work.
 
-% distance(Agent, TargetAgent, Distance).
+ distance(Agent, TargetAgent, Distance):-
+  Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y).
+
 % multiverse_distance(StateId, AgentId, TargetStateId, TargetAgentId, Distance).
 % nearest_agent(StateId, AgentId, NearestAgentId, Distance).
 % nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Distance).
