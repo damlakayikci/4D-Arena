@@ -1,21 +1,23 @@
-?- consult('simulator.pro').
+% consult('simulator.pro').
+% consult('main.pro').
 
 distance(Agent, TargetAgent, Distance):-
   Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y).
 
 
 multiverse_distance(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
-  get_current_agent_and_state(UniverseId, AgentId, StateId),
-  get_current_agent_and_state(TargetUniverseId, TargetAgentId, TargetStateId),
+  history(StateId, UniverseId, Time, _),                         % get universe and time of current state
+  history(TargetStateId, TargetUniverseId, TargetTime, _),       % get universe and time of target state
+ 
+  state(StateId, Agents, _, _),                                  % get agents of current state
+  state(TargetStateId, TargetAgents, _ , _),                     % get agents of target state
 
   Agent = Agents.get(AgentId),
-  TargetAgent = Agents.get(TargetAgentId),
-
-  % if agent is not a wizard
-  %Agent \= agent(wizard, _, _, _),
+  TargetAgent = TargetAgents.get(TargetAgentId),
   (Agent.class = wizard -> TravelCost = 2; TravelCost = 5),
 
- Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y) + TravelCost *(abs(Agent.time - TargetAgent.time) + abs(UniverseId - TargetUniverseId))
+  Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y) + 
+  TravelCost *(abs(Time - TargetTime) + abs(UniverseId - TargetUniverseId))
  .
 
 
