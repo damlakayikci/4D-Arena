@@ -77,34 +77,35 @@ nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Dist
 
 
 
-% num_agents_in_state(StateId, Name, NumWarriors, NumWizards, NumRogues) :-
-%   state(StateId, Agents, _, _),
-%   findall(AgentId, (get_dict(AgentId, Agents, Agent), Agent.class = warrior), Warriors),
-%   findall(AgentId, (get_dict(AgentId, Agents, Agent), Agent.class = wizard), Wizards),
-%   findall(AgentId, (get_dict(AgentId, Agents, Agent), Agent.class = rogue), Rogues),
-%   length(Warriors, NumWarriors),
-%   length(Wizards, NumWizards),
-%   length(Rogues, NumRogues)
+num_agents_in_state(StateId, Name, NumWarriors, NumWizards, NumRogues) :-
+  state(StateId, Agents, _, _),
+  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name, Agent.class = warrior), Warriors),
+  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name,Agent.class = wizard), Wizards),
+  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name,Agent.class = rogue), Rogues),
+  length(Warriors, NumWarriors),
+  length(Wizards, NumWizards),
+  length(Rogues, NumRogues).
 
 
 
 
-% difficulty_of_state(StateId, Name, AgentClass, Difficulty) :-
-%   state(StateId, Agents, _, _),
-%   ((AgentClass = warrior -> 
-%     % Difficulty = 5 ∗ NumWarriors + 8 ∗ NumWizards + 2 ∗ NumRogues
-%     Difficulty is NumWarriors * 5 + NumWizards * 8 + NumRogues * 2
-%    );
-%    (AgentClass = wizard ->
-%     % Difficulty = 2 ∗ NumWarriors + 5 ∗ NumWizards + 8 ∗ NumRogues
-%      Difficulty is NumWarriors * 2 + NumWizards * 5 + NumRogues * 8
-%    );
-%    (Agent.class = rogue ->
-%     % Difficulty = 8 ∗ NumWarriors + 2 ∗ NumWizards + 5 ∗ NumRogues
-%     Difficulty is NumWarriors * 8 + NumWizards * 2 + NumRogues * 5
-%    )
-%   )
-% . 
+difficulty_of_state(StateId, Name, AgentClass, Difficulty) :-
+  % call num_agents_in_state to get number of each class of agents in state
+  num_agents_in_state(StateId, Name, NumWarriors, NumWizards, NumRogues),
+  ((AgentClass = warrior -> 
+    % Difficulty = 5 ∗ NumWarriors + 8 ∗ NumWizards + 2 ∗ NumRogues
+    Difficulty is NumWarriors * 5 + NumWizards * 8 + NumRogues * 2
+   );
+   (AgentClass = wizard ->
+    % Difficulty = 2 ∗ NumWarriors + 5 ∗ NumWizards + 8 ∗ NumRogues
+     Difficulty is NumWarriors * 2 + NumWizards * 5 + NumRogues * 8
+   );
+   (AgentClass = rogue ->
+    % Difficulty = 8 ∗ NumWarriors + 2 ∗ NumWizards + 5 ∗ NumRogues
+    Difficulty is NumWarriors * 8 + NumWizards * 2 + NumRogues * 5
+   )
+  )
+. 
 
 % easiest_traversable_state(StateId, AgentId, TargetStateId).
 % basic_action_policy(StateId, AgentId, Action).
