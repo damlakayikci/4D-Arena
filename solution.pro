@@ -24,14 +24,15 @@ key_at_index(Dict, Index, Key) :-
   dict_keys(Dict, Keys),
   nth0(Index, Keys, Key).
 
-  min_tuple([Tuple], Tuple).
-  min_tuple([(D1, Agent1, Id1), (D2, _, _) | Rest], MinTuple) :-
-      D1 =< D2,
-      min_tuple([(D1, Agent1, Id1) | Rest], MinTuple).
-  min_tuple([(D1, _, _), (D2, Agent2, Id2) | Rest], MinTuple) :-
-      D1 > D2,
-      min_tuple([(D2, Agent2, Id2) | Rest], MinTuple).
-  
+% 
+min_tuple([Tuple], Tuple).
+min_tuple([(D1, Agent1, Id1), (D2, _, _) | Rest], MinTuple) :-
+    D1 =< D2,
+    min_tuple([(D1, Agent1, Id1) | Rest], MinTuple).
+min_tuple([(D1, _, _), (D2, Agent2, Id2) | Rest], MinTuple) :-
+    D1 > D2,
+    min_tuple([(D2, Agent2, Id2) | Rest], MinTuple).
+
 
 nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   state(StateId, Agents, _, _),                                  % get agents of current state
@@ -46,19 +47,37 @@ nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   min_tuple(DistancesandAgents, (Distance, _, NearestAgentId))   % get agent with minimum distance
   .
 
+multiverse_min_tuple([Tuple], Tuple).
+multiverse_min_tuple([(D1, Agent1, Id1, StId1), (D2, _, _, _) | Rest], MinTuple) :-
+    D1 =< D2,
+    multiverse_min_tuple([(D1, Agent1, Id1, StId1) | Rest], MinTuple).
+multiverse_min_tuple([(D1, _, _,_), (D2, Agent2, Id2, StId2) | Rest], MinTuple) :-
+    D1 > D2,
+    multiverse_min_tuple([(D2, Agent2, Id2, StId2) | Rest], MinTuple).
 
-% nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
-%   findall(State, (history(States, _, _, _)), States),            % get all states
 
-%   history(StateId, UniverseId, Time, _),                         % get universe and time of current state
-%   state(StateId, Agents, _, _),                                  % get agents of current state
-%   Agent = Agents.get(AgentId),                                   % get agent of current state
+nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
+  findall(StateIds, (history(StateIds, _, _, _)), States),             % get all states
+  write(States), nl,
+  findall((Agents, StateIden),
+        (member(StateIden, States), state(StateIden, Agents, _, _)),       % get all agents in all states
+        AllAgents),
+  write(AllAgents), nl,
+  state(StateId, Agents, _, _),                                  % get agents of current state
+  Agent = Agents.get(AgentId),                                   % get agent of current state
+  % find all distances to agents in current state
+  findall((D, TAgent, TAgentId, TStateId), 
+        (member((TAgents, TStateId), AllAgents),                   % for all elements in AllAgents
+         get_dict(TAgentId, TAgents, _),                           % for each agent in Agents
+         TAgent = TAgents.get(TAgentId),                           % get agent
+         TAgent.name \= Agent.name,                               % if agent name is not equal to current agent name
+         multiverse_distance(StateId, AgentId, TStateId , TAgentId, D)),                       % calculate distance
+        DistancesandAgents),
+  write(DistancesandAgents), nl,
+  multiverse_min_tuple(DistancesandAgents, (Distance, _,TargetAgentId, TargetStateId)).   % get agent with minimum distance
 
-%   % find all distances to agents in current state
-%   findall(D, (get_dict(TargetAgentId, Agents, _), distance(Agent, Agents.get(TargetAgentId), D)), Distances),
-%   remove_element(0, Distances, Filtered),                       % remove distance to self
-  
-%   write(Distances).
+
+
 
 % num_agents_in_state(StateId, Name, NumWarriors, NumWizards, NumRogues) :-
 %   state(StateId, Agents, _, _),
