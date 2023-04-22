@@ -62,7 +62,6 @@ nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Dist
   findall((Agents, StateIden),
         (member(StateIden, States), state(StateIden, Agents, _, _)),       % get all agents in all states
         AllAgents),
-  write(AllAgents), nl,
   state(StateId, Agents, _, _),                                  % get agents of current state
   Agent = Agents.get(AgentId),                                   % get agent of current state
   % find all distances to agents in current state
@@ -73,7 +72,6 @@ nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Dist
          TAgent.name \= Agent.name,                               % if agent name is not equal to current agent name
          multiverse_distance(StateId, AgentId, TStateId , TAgentId, D)),                       % calculate distance
         DistancesandAgents),
-  write(DistancesandAgents), nl,
   multiverse_min_tuple(DistancesandAgents, (Distance, _,TargetAgentId, TargetStateId)).   % get agent with minimum distance
 
 
