@@ -18,27 +18,10 @@ multiverse_distance(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
   (Agent.class = wizard -> TravelCost = 2; TravelCost = 5),      % if agent is a wizard, travel cost is 2, else 5
 
   Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y) + 
-  TravelCost *(abs(Time - TargetTime) + abs(UniverseId - TargetUniverseId))
- .
-
-% difference_list([], Agent, Distances).
-% difference_list([X|Xs], Agent, Distances) :-
-%   distance(Agent , X, Distance),
-%   difference_list(Xs, Agent, [Distance | Distances]).
-
-% difference_list([], _, []).
-% difference_list([X|Xs], Agent, [Distance|Distances]) :-
-%     distance(Agent, X, Distance),
-%     difference_list(Xs, Agent, Distances).
+  TravelCost *(abs(Time - TargetTime) + abs(UniverseId - TargetUniverseId)).
 
 
-find_key_by_value(Value, Dict, Key) :-
-  get_dict(Key, Dict, Value),
-  !.
-find_key_by_value(Value, Dict, Key) :-
-  dict_pairs(Dict, _, Pairs),
-  member(Key-Value, Pairs).
-
+% remove specified element from list
 remove_element(_, [], []).
 remove_element(Element, [Element|Tail], TailWithoutElement) :-
     remove_element(Element, Tail, TailWithoutElement).
@@ -46,9 +29,12 @@ remove_element(Element, [Head|Tail], [Head|TailWithoutElement]) :-
     dif(Head, Element),
     remove_element(Element, Tail, TailWithoutElement).
 
+% get key of dict at specified index
 key_at_index(Dict, Index, Key) :-
   dict_keys(Dict, Keys),
   nth0(Index, Keys, Key).
+
+
 nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   state(StateId, Agents, _, _),                                  % get agents of current state
   Agent = Agents.get(AgentId),                                   % get agent of current state
@@ -57,9 +43,8 @@ nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   remove_element(0, Distances, Filtered),                       % remove distance to self
   min_list(Filtered, Distance),                                 % get minimum distance
 
-  nth0(Index, Distances, Distance),                           % get index of minimum distance from the original list 
-  key_at_index(Agents, Index, NearestAgentId)                 % get key of agent at that index
-  
+  nth0(Index, Distances, Distance),                             % get index of minimum distance from the original list 
+  key_at_index(Agents, Index, NearestAgentId)                   % get key of agent at that index
   .
 
 
