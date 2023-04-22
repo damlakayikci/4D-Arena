@@ -46,24 +46,20 @@ remove_element(Element, [Head|Tail], [Head|TailWithoutElement]) :-
     dif(Head, Element),
     remove_element(Element, Tail, TailWithoutElement).
 
-
-
+key_at_index(Dict, Index, Key) :-
+  dict_keys(Dict, Keys),
+  nth0(Index, Keys, Key).
 nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   state(StateId, Agents, _, _),                                  % get agents of current state
   Agent = Agents.get(AgentId),                                   % get agent of current state
 
-  %findall(distance(Agent, Agents.get(X), Distance), (member(X,Agents), \+ X = AgentId) , Distances),
-  %findall(Distance, (member(X, Agents), X \= AgentId, distance(Agent, Agents.get(X), Distance)), Distances).
-  findall(D, (member(X, Agents), distance(Agent, Agents.get(X), D)), Distances).
+  findall(D, (get_dict(TargetAgentId, Agents, _), distance(Agent, Agents.get(TargetAgentId), D)), Distances),
+  remove_element(0, Distances, Filtered),                       % remove distance to self
+  min_list(Filtered, Distance),                                 % get minimum distance
 
-  remove_element(0, Distances, Filtered),
-  min_list(Filtered, MinDistance),                              % get minimum distance
-
-  nth0(Index, Distances, MinDistance),                           % get index of minimum distance                 
-  nth0(Index, Agents, NearestAgentId),                           % get agent at index of minimum distance
+  nth0(Index, Distances, Distance),                           % get index of minimum distance from the original list 
+  key_at_index(Agents, Index, NearestAgentId)                 % get key of agent at that index
   
-  Distance is  MinDistance,
-  NearestAgentId is NearestAgentId
   .
 
 
