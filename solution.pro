@@ -58,7 +58,6 @@ multiverse_min_tuple([(D1, _, _,_), (D2, Agent2, Id2, StId2) | Rest], MinTuple) 
 
 nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
   findall(StateIds, (history(StateIds, _, _, _)), States),             % get all states
-  write(States), nl,
   findall((Agents, StateIden),
         (member(StateIden, States), state(StateIden, Agents, _, _)),       % get all agents in all states
         AllAgents),
@@ -107,5 +106,75 @@ difficulty_of_state(StateId, Name, AgentClass, Difficulty) :-
   )
 . 
 
-% easiest_traversable_state(StateId, AgentId, TargetStateId).
+can_perform_action(StateId, TargetStateId, AgentId, Action) :-
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    get_current_agent_and_state(UniverseId, AgentId, StateId),
+    state(StateId, Agents, _, TurnOrder),
+    history(StateId, UniverseId, Time, _),
+    history(TargetStateId, TargetUniverseId, TargetTime, _),
+    Agent = Agents.get(AgentId),
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  (Action = portal ->
+      % check whether global universe limit has been reached
+      global_universe_id(GlobalUniverseId),
+      universe_limit(UniverseLimit),
+      GlobalUniverseId < UniverseLimit,
+      % agent cannot time travel if there is only one agent in the universe
+      length(TurnOrder, NumAgents),
+      NumAgents > 1,
+      %[TargetUniverseId, TargetTime] = ActionArgs,
+      % check whether target is now or in the past
+      current_time(TargetUniverseId, TargetUniCurrentTime, _),
+      TargetTime < TargetUniCurrentTime,
+      % check whether there is enough mana
+      (Agent.class = wizard -> TravelCost = 2; TravelCost = 5),
+      Cost is abs(TargetTime - Time)*TravelCost + abs(TargetUniverseId - UniverseId)*TravelCost,
+      Agent.mana >= Cost,
+      % check whether the target location is occupied
+      get_earliest_target_state(TargetUniverseId, TargetTime, TargetStateId),
+      state(TargetStateId, TargetAgents, _, TargetTurnOrder),
+      TargetState = state(TargetStateId, TargetAgents, _, TargetTurnOrder),
+      \+tile_occupied(Agent.x, Agent.y, TargetState)
+  );
+  (Action = portal_to_now ->
+      % agent cannot time travel if there is only one agent in the universe
+      length(TurnOrder, NumAgents),
+      NumAgents > 1,
+     % [TargetUniverseId] = ActionArgs,
+      % agent can only travel to now if it's the first turn in the target universe
+      current_time(TargetUniverseId, TargetTime, 0),
+      % agent cannot travel to current universe's now (would be a no-op)
+      \+(TargetUniverseId = UniverseId),
+      % check whether there is enough mana
+      (Agent.class = wizard -> TravelCost = 2; TravelCost = 5),
+      Cost is abs(TargetTime - Time)*TravelCost + abs(TargetUniverseId - UniverseId)*TravelCost,
+      Agent.mana >= Cost,
+      % check whether the target location is occupied
+      get_latest_target_state(TargetUniverseId, TargetTime, TargetStateId),
+      state(TargetStateId, TargetAgents, _, TargetTurnOrder),
+      TargetState = state(TargetStateId, TargetAgents, _, TargetTurnOrder),
+      \+tile_occupied(Agent.x, Agent.y, TargetState)
+).
+
+
+  
+easiest_traversable_state(StateId, AgentId, TargetStateId) :-
+  history(StateId, UniverseId, _, _),        
+  state(StateId, Agents,_,_),                                 % 
+  findall(StateIds, (history(StateIds, _, _, _)), States),             % get all states
+  write(States), nl,nl,
+  Agent = Agents.get(AgentId),                                         % get agent of current state
+  % findall(StateIden,
+  %         ((can_perform_action(StateId,StateIden, AgentId, portal);can_perform_action(StateId, StateIden, AgentId, portal_to_now)),
+  %         member(StateIden, States)),       
+  %         Portals),
+  
+  findall((Difficulty,State, Agent), (member(State, States), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)),
+          Difficulties),
+  min_tuple(Difficulties, (_,TargetStateId,_))
+  
+.
+
+
+
 % basic_action_policy(StateId, AgentId, Action).
