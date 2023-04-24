@@ -79,8 +79,8 @@ nearest_agent_in_multiverse(StateId, AgentId, TargetStateId, TargetAgentId, Dist
 num_agents_in_state(StateId, Name, NumWarriors, NumWizards, NumRogues) :-
   state(StateId, Agents, _, _),
   findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name, Agent.class = warrior), Warriors),
-  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name,Agent.class = wizard), Wizards),
-  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name,Agent.class = rogue), Rogues),
+  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name, Agent.class = wizard), Wizards),
+  findall(AgentId, (get_dict(AgentId, Agents, _), Agent= Agents.get(AgentId), Agent.name \= Name, Agent.class = rogue), Rogues),
   length(Warriors, NumWarriors),
   length(Wizards, NumWizards),
   length(Rogues, NumRogues).
@@ -152,6 +152,12 @@ can_perform_action(StateId, TargetStateId, AgentId, Action) :-
       \+tile_occupied(Agent.x, Agent.y, TargetState)
 )).
 
+remove_zero_tuples([], []).
+remove_zero_tuples([(0, _, _) | Rest], Filtered) :-
+    remove_zero_tuples(Rest, Filtered).
+remove_zero_tuples([(H1, H2, H3) | Rest], [(H1, H2, H3) | Filtered]) :-
+    H1 \= 0,
+    remove_zero_tuples(Rest, Filtered).
 
   
 easiest_traversable_state(StateId, AgentId, TargetStateId) :-
@@ -162,12 +168,10 @@ easiest_traversable_state(StateId, AgentId, TargetStateId) :-
       (can_perform_action(StateId, StateIden, AgentId, portal);
        can_perform_action(StateId, StateIden, AgentId, portal_to_now)) ),
     Portals),
-  write('Portals '), write(Portals), nl,
-
 
   findall((Difficulty,State, AgentId), (member(State, Portals), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)), Difficulties),
-  write(Difficulties), nl,
-  min_tuple(Difficulties, (_,TargetStateId,_))
+  remove_zero_tuples(Difficulties, Filtered),
+  min_tuple(Filtered, (_,TargetStateId,_))
   
 .
 
