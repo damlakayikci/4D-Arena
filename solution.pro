@@ -106,15 +106,15 @@ difficulty_of_state(StateId, Name, AgentClass, Difficulty) :-
   )
 . 
 
+
+
 can_perform_action(StateId, TargetStateId, AgentId, Action) :-
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    get_current_agent_and_state(UniverseId, AgentId, StateId),
     state(StateId, Agents, _, TurnOrder),
+    state(TargetStateId, TargetAgents, _, TargetTurnOrder),
     history(StateId, UniverseId, Time, _),
     history(TargetStateId, TargetUniverseId, TargetTime, _),
     Agent = Agents.get(AgentId),
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  (Action = portal ->
+  ((Action = portal ->
       % check whether global universe limit has been reached
       global_universe_id(GlobalUniverseId),
       universe_limit(UniverseLimit),
@@ -131,11 +131,9 @@ can_perform_action(StateId, TargetStateId, AgentId, Action) :-
       Cost is abs(TargetTime - Time)*TravelCost + abs(TargetUniverseId - UniverseId)*TravelCost,
       Agent.mana >= Cost,
       % check whether the target location is occupied
-      get_earliest_target_state(TargetUniverseId, TargetTime, TargetStateId),
-      state(TargetStateId, TargetAgents, _, TargetTurnOrder),
       TargetState = state(TargetStateId, TargetAgents, _, TargetTurnOrder),
       \+tile_occupied(Agent.x, Agent.y, TargetState)
-  );
+        );
   (Action = portal_to_now ->
       % agent cannot time travel if there is only one agent in the universe
       length(TurnOrder, NumAgents),
@@ -150,27 +148,25 @@ can_perform_action(StateId, TargetStateId, AgentId, Action) :-
       Cost is abs(TargetTime - Time)*TravelCost + abs(TargetUniverseId - UniverseId)*TravelCost,
       Agent.mana >= Cost,
       % check whether the target location is occupied
-      get_latest_target_state(TargetUniverseId, TargetTime, TargetStateId),
-      state(TargetStateId, TargetAgents, _, TargetTurnOrder),
       TargetState = state(TargetStateId, TargetAgents, _, TargetTurnOrder),
       \+tile_occupied(Agent.x, Agent.y, TargetState)
-).
+)).
 
 
   
 easiest_traversable_state(StateId, AgentId, TargetStateId) :-
-  history(StateId, UniverseId, _, _),        
   state(StateId, Agents,_,_),                                 % 
-  findall(StateIds, (history(StateIds, _, _, _)), States),             % get all states
-  write(States), nl,nl,
   Agent = Agents.get(AgentId),                                         % get agent of current state
-  % findall(StateIden,
-  %         ((can_perform_action(StateId,StateIden, AgentId, portal);can_perform_action(StateId, StateIden, AgentId, portal_to_now)),
-  %         member(StateIden, States)),       
-  %         Portals),
-  
-  findall((Difficulty,State, Agent), (member(State, States), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)),
-          Difficulties),
+  findall(StateIden, 
+    (history(StateIden, _, _, _), 
+      (can_perform_action(StateId, StateIden, AgentId, portal);
+       can_perform_action(StateId, StateIden, AgentId, portal_to_now)) ),
+    Portals),
+  write('Portals '), write(Portals), nl,
+
+
+  findall((Difficulty,State, AgentId), (member(State, Portals), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)), Difficulties),
+  write(Difficulties), nl,
   min_tuple(Difficulties, (_,TargetStateId,_))
   
 .
