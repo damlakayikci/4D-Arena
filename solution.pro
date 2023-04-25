@@ -18,12 +18,6 @@ multiverse_distance(StateId, AgentId, TargetStateId, TargetAgentId, Distance) :-
   Distance is abs(Agent.x - TargetAgent.x) +  abs(Agent.y - TargetAgent.y) + 
   TravelCost *(abs(Time - TargetTime) + abs(UniverseId - TargetUniverseId)).
 
-
-% get key of dict at specified index
-key_at_index(Dict, Index, Key) :-
-  dict_keys(Dict, Keys),
-  nth0(Index, Keys, Key).
-
 % 
 min_tuple([Tuple], Tuple).
 min_tuple([(D1, Agent1, Id1), (D2, _, _) | Rest], MinTuple) :-
@@ -164,17 +158,143 @@ easiest_traversable_state(StateId, AgentId, TargetStateId) :-
   state(StateId, Agents,_,_),                                 % 
   Agent = Agents.get(AgentId),                                         % get agent of current state
   findall(StateIden, 
-    (history(StateIden, _, _, _), 
+    (history(StateIden, _, _, _),
       (can_perform_action(StateId, StateIden, AgentId, portal);
        can_perform_action(StateId, StateIden, AgentId, portal_to_now)) ),
-    Portals),
-
+    Portal),
+    append(Portal, [StateId], Portals),
   findall((Difficulty,State, AgentId), (member(State, Portals), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)), Difficulties),
+  write(Difficulties), nl,
   remove_zero_tuples(Difficulties, Filtered),
   min_tuple(Filtered, (_,TargetStateId,_))
-  
 .
 
 
+% basic_action_policy(StateId, AgentId, Action) :-
+%   state(StateId, Agents, _, _),
+%   Agent = Agents.get(AgentId),
+%   easiest_traversable_state(StateId, AgentId, TargetStateId),
+%   (
+%     (nonvar(TargetStateId), TargetStateId \= StateId) -> % If TargetStateId is a valid state and different from the current state
+%       Action = ['portal_to_now', TargetStateId] % Use portal_to_now action with TargetStateId
+%   ; % else
+%     nearest_agent(StateId, AgentId, NearestAgentId, Distance),
+%     TargetAgent = Agents.get(NearestAgentId),
+%     (
+%       Agent.class = warrior -> % If the agent is a warrior
+%         Distance =< 1,
+%         Damage is 20 - Agent.armor,
+%         TargetAgentHealth is TargetAgent.health - Damage,
+%         TargetAgentHealth > 0,
+%         Action = ['melee_attack', NearestAgentId] % Use melee_attack action with NearestAgentId
+%     ;
+%       Agent.class = wizard -> % If the agent is a wizard
+%         Distance =< 10,
+%         Damage is 10 - Agent.agility,
+%         TargetAgentHealth is TargetAgent.health - Damage,
+%         TargetAgentHealth > 0,
+%         Action = ['magic_missile', NearestAgentId] % Use magic_missile action with NearestAgentId
+%     ;
+%       Agent.class = rogue -> % If the agent is a rogue
+%         Distance =< 5,
+%         Damage is 15 - Distance - Agent.armor,
+%         TargetAgentHealth is TargetAgent.health - Damage,
+%         TargetAgentHealth > 0,
+%         Action = ['ranged_attack', NearestAgentId] % Use ranged_attack action with NearestAgentId
+%     ),
+    
+%       HorizontalDistance is Agent.x - TargetAgent.x,
+%       VerticalDistance is Agent.y - TargetAgent.y,
+%       State = state(StateId, Agents, CurrentTurn, TurnOrder),
+%       (
+%         HorizontalDistance \= 0 ->
+%           (
+%             HorizontalDistance > 0 ->
+%               Xn is Agent.x - 1,
+%               \+tile_occupied(Xn, Agent.y, State),
+%               Action = ['move_left']
+%           ;
+%               Xn is Agent.x + 1,
+%               \+tile_occupied(Xn, Agent.y, State),
+%               Action = ['move_right']
+%           )
+%       ;
+%         VerticalDistance \= 0 ->
+%           (
+%             VerticalDistance > 0 ->
+%               Yn is Agent.y - 1,
+%               \+tile_occupied(Agent.x, Yn, State),
+%               Action = ['move_down']
+%           ;
+%               Yn is Agent.y + 1,
+%               \+tile_occupied(Agent.x, Yn, State),
+%               Action = ['move_up']
+%           )
+%     )
+%      Action = ['rest']
+%   ).
 
-% basic_action_policy(StateId, AgentId, Action).
+basic_action_policy(StateId, AgentId, Action) :-
+  state(StateId, Agents, _, _),
+  Agent = Agents.get(AgentId),
+  easiest_traversable_state(StateId, AgentId, TargetStateId),
+  (
+    (nonvar(TargetStateId), TargetStateId \= StateId) -> % If TargetStateId is a valid state and different from the current state
+      Action = ['portal_to_now', TargetStateId] % Use portal_to_now action with TargetStateId
+  ; % else
+    nearest_agent(StateId, AgentId, NearestAgentId, Distance),
+    TargetAgent = Agents.get(NearestAgentId),
+    (
+      Agent.class = warrior -> % If the agent is a warrior
+        Distance =< 1,
+        Damage is 20 - Agent.armor,
+        TargetAgentHealth is TargetAgent.health - Damage,
+        TargetAgentHealth > 0,
+        Action = ['melee_attack', NearestAgentId] % Use melee_attack action with NearestAgentId
+    ;
+      Agent.class = wizard -> % If the agent is a wizard
+        Distance =< 10,
+        Damage is 10 - Agent.agility,
+        TargetAgentHealth is TargetAgent.health - Damage,
+        TargetAgentHealth > 0,
+        Action = ['magic_missile', NearestAgentId] % Use magic_missile action with NearestAgentId
+    ;
+      Agent.class = rogue -> % If the agent is a rogue
+        Distance =< 5,
+        Damage is 15 - Distance - Agent.armor,
+        TargetAgentHealth is TargetAgent.health - Damage,
+        TargetAgentHealth > 0,
+        Action = ['ranged_attack', NearestAgentId] % Use ranged_attack action with NearestAgentId
+    ;
+      HorizontalDistance is Agent.x - TargetAgent.x,
+      VerticalDistance is Agent.y - TargetAgent.y,
+      State = state(StateId, Agents, _, _),
+      (
+        HorizontalDistance \= 0 ->
+          (
+            HorizontalDistance > 0 ->
+              Xn is Agent.x - 1,
+              \+tile_occupied(Xn, Agent.y, State),
+              Action = ['move_left']
+          ;
+              Xn is Agent.x + 1,
+              \+tile_occupied(Xn, Agent.y, State),
+              Action = ['move_right']
+          )
+      ;
+        VerticalDistance \= 0 ->
+          (
+            VerticalDistance > 0 ->
+              Yn is Agent.y - 1,
+              \+tile_occupied(Agent.x, Yn, State),
+              Action = ['move_down']
+          ;
+              Yn is Agent.y + 1,
+              \+tile_occupied(Agent.x, Yn, State),
+              Action = ['move_up']
+          )
+      ;
+        Action = ['rest']
+      )
+    )
+  ).
