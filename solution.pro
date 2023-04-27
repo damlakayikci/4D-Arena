@@ -31,7 +31,6 @@ min_tuple([(D1, _, _), (D2, Agent2, Id2) | Rest], MinTuple) :-
 nearest_agent(StateId, AgentId, NearestAgentId, Distance) :-
   state(StateId, Agents, _, _),                                  % get agents of current state
   Agent = Agents.get(AgentId),                                   % get agent of current state
-
   findall((D, TargetAgent, TargetAgentId), 
         (get_dict(TargetAgentId, Agents, _),                     % for each agent in Agents
          TargetAgent = Agents.get(TargetAgentId),                % get agent
@@ -165,9 +164,13 @@ easiest_traversable_state(StateId, AgentId, TargetStateId) :-
        can_perform_action(StateId, StateIden, AgentId, portal_to_now)) ),
     Portal),
     append(Portal, [StateId], Portals),
-    findall((Difficulty,StateIden, AgentId), (member(StateIden, Portals), difficulty_of_state(StateIden, Agent.name, Agent.class, Difficulty)), Difficulties),
+    findall((Difficulty,State, AgentId), (member(State, Portals), difficulty_of_state(State, Agent.name, Agent.class, Difficulty)), Difficulties),
   remove_zero_tuples(Difficulties, Filtered),
-  (Filtered = [] -> TargetStateId = none ; min_tuple(Filtered, (_,TargetStateId,_))).
+  (Filtered = [] -> TargetStateId = StateId ; 
+    (min_tuple(Filtered, (MinDistance,_,_)),
+    (member((MinDistance, StateId, _), Filtered)-> TargetStateId = StateId;
+    min_tuple(Filtered, (_,TargetStateId,_)))
+    )).
 
 
 
@@ -177,10 +180,12 @@ basic_action_policy(StateId, AgentId, Action) :-
   Agent = Agents.get(AgentId),
   easiest_traversable_state(StateId, AgentId, TargetStateId),
   (
-    TargetStateId \= none ->
-    (
       (TargetStateId \= StateId) -> % If TargetStateId is a valid state and different from the current state
-        Action = ['portal_to_now', TargetStateId] % Use portal_to_now action with TargetStateId
+        (history(TargetStateId, UniverseId, TargetTime, _),
+        current_time(UniverseId, Time, 0),
+        TargetTime = Time ->
+          Action = ['portal_to_now', UniverseId]; % Use portal action with TargetStateId
+        Action = ['portal', TargetStateId]) % Use portal_to_now action with TargetStateId
       ;
       nearest_agent(StateId, AgentId, NearestAgentId, Distance),
       TargetAgent = Agents.get(NearestAgentId),
@@ -236,9 +241,7 @@ basic_action_policy(StateId, AgentId, Action) :-
           ),
           !
         )
-      )
-    )
-  ;
-  Action = ['rest']
+      ) 
+ ; Action = ['rest']
   ).
 
